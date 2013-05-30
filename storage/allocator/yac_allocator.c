@@ -26,6 +26,7 @@
 
 static const yac_shared_memory_handlers *shared_memory_handler = NULL;
 static const char *shared_model;
+extern yac_shared_memory_handlers yac_alloc_create_file_handlers;
 
 int yac_allocator_startup(unsigned long k_size, unsigned long size, char **msg) /* {{{ */ {
 	char *p;
@@ -54,7 +55,7 @@ int yac_allocator_startup(unsigned long k_size, unsigned long size, char **msg) 
 	segments_array_size = (segments_num - 1) * segment_size;
 
     yac_storage = segments[0].p;
-    memcpy(&YAC_SG(first_seg), (char *)(&segments[0]), segment_size);
+    memcpy(&YAC_SG(first_seg), (char *)segments, segment_size);
 
     YAC_SG(segments_num) 		= segments_num - 1;
 	YAC_SG(segments_num_mask) 	= YAC_SG(segments_num) - 1;
@@ -76,23 +77,21 @@ int yac_allocator_startup(unsigned long k_size, unsigned long size, char **msg) 
 /* }}} */
 
 void yac_allocator_shutdown(void) /* {{{ */ {
-	yac_shared_segment **segments;
+	yac_shared_segment *segments = NULL;
 	const yac_shared_memory_handlers *he;
 
     segments = YAC_SG(segments);
     if (segments) {
         if ((he = &yac_shared_memory_handler)) {
-            int i = 0;
-            for (i = 0; i < YAC_SG(segments_num); i++) {
-                he->detach_segment(segments[i]);
-            }
     		he->detach_segment(&YAC_SG(first_seg));
         }
     }
 }
 /* }}} */
 
+
 static inline void *yac_allocator_alloc_algo2(unsigned long size, int hash) /* {{{ */ {
+	
     yac_shared_segment *segment;
 	unsigned int seg_size, retry, pos, current;
 
@@ -108,7 +107,7 @@ do_alloc:
 		pos += size;
 		segment->pos = pos;
 		if (segment->pos >= pos) {
-			return (void *)(segment->p + (pos - size));
+			return (void *)((unsigned int)segment->p + pos - size);
 		} else if (retry--) {
 			goto do_retry;
 		}
@@ -129,7 +128,11 @@ do_alloc:
 		pos = 0;
 		goto do_alloc;
 	}
+
+	return (void *)0;
+	
 }
+
 /* }}} */
 
 #if 0
