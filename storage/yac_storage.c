@@ -511,7 +511,7 @@ do_add:
 		YAC_KEY_SET_LEN(*s, len, size);
 		val = yac_allocator_raw_alloc(real_size, (int)hash);
 		if (val) {
-			memcpy((char *)val, (char *)s, sizeof(yac_kv_val) + size - 1);
+			memcpy(val, s, sizeof(yac_kv_val) + size - 1);
 			if (p->val == NULL) {
 				++YAC_SG(slots_num);
 			}
